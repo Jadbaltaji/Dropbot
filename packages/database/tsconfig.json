@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist",
+    "composite": true,
+    "rootDir": "src",
+    "lib": ["esnext", "dom"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "src/**/*.json"]
+}

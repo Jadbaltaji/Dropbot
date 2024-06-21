@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("PG_CONNECTION_STRING")
+}
+
+model User {
+  id              String        @id
+  username        String        @unique
+  role            UserRole      @default(User)
+  invitedByUserId String?
+  invitedBy       User?         @relation("invitedBy", fields: [invitedByUserId], references: [id])
+  invitedUsers    User[]        @relation("invitedBy")
+  wallets         Wallet[]
+  transactions    Transaction[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
+  ONFT            ONFT[]
+  Checkouts       Checkout[]
+  points          Int           @default(0)
+}
+
+enum UserRole {
+  Admin
+  User
+  Anonymous
+}
+
+model Wallet {
+  address     String        @id @unique
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  createdAt   DateTime      @default(now())
+  isImported  Boolean       @default(false)
+  updatedAt   DateTime      @default(now()) @updatedAt
+  Transaction Transaction[]
+  RouteJob    RouteJob[]
+}
+
+model Transaction {
+  hash          String   @id @unique
+  userId        String
+  walletAddress String
+  tokenAddress  String
+  user          User     @relation(fields: [userId], references: [id])
+  wallet        Wallet   @relation(fields: [walletAddress], references: [address])
+  // token         Token    @relation(fields: [tokenAddress], references: [address])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+}
+
+model ONFT {
+  userId      String
+  tokenId     String      @unique
+  chain       String
+  ONFTservice ONFTService
+  user        User        @relation(fields: [userId], references: [id])
+}
+
+enum ONFTService {
+  Merkly
+  L2Marathon
+}
+
+enum CheckoutStatus {
+  Pending
+  Success
+  Failed
+}
+
+enum PackageType {
+  Custodial
+  NonCustodial
+}
+
+model Package {
+  id          String      @id @unique @default(uuid())
+  name        String
+  description String
+  price       Float
+  walletCount Int
+  type        PackageType
+  checkout    Checkout[]
+}
+
+model Checkout {
+  id        String         @id @unique
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  status    CheckoutStatus @default(Pending)
+  packageId String
+  package   Package        @relation(fields: [packageId], references: [id])
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @default(now()) @updatedAt
+}
+
+enum RouteJobExecutor {
+  Client
+  Dropbot
+}
+
+model RouteJob {
+  id                 String           @id @unique @default(uuid())
+  walletAddress      String
+  executor           RouteJobExecutor
+  name               String
+  scheduledDate      DateTime         @default(now())
+  wallet             Wallet           @relation(fields: [walletAddress], references: [address])
+  percentageComplete Decimal          @default(0.0)
+  status             String           @default("Idle")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now()) @updatedAt
+}
+
+// model Token {
+//     address     String        @id @unique
+//     name        String
+//     ticker      String
+//     createdAt   DateTime      @default(now())
+//     updatedAt   DateTime      @default(now()) @updatedAt
+//     Transaction Transaction[]
+// }
